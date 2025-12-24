@@ -184,6 +184,7 @@
     function resetChicken() {
       chicken.x = 180;
       chicken.y = areaHeight - laneHeight;
+      minChickenY = chicken.y;
       updateChicken();
     }
 
@@ -237,7 +238,10 @@
 
     // Add a fullscreen black overlay for the blackout effect
     let blackoutDiv = null;
+    let blackoutShown = false;
     function triggerBlackout() {
+      if (blackoutShown) return;
+      blackoutShown = true;
       if (!blackoutDiv) {
         blackoutDiv = document.createElement('div');
         blackoutDiv.style.position = 'fixed';
@@ -252,7 +256,6 @@
         document.body.appendChild(blackoutDiv);
       }
       blackoutDiv.style.opacity = '1';
-      // Add red writing after blackout
       setTimeout(() => {
         let storyMsg = document.getElementById('story-message');
         if (!storyMsg) {
@@ -270,7 +273,6 @@
           storyMsg.style.textAlign = 'center';
           document.body.appendChild(storyMsg);
         }
-        // Typing animation for story message
         const msg = 'I warned you... You cant really go back now.';
         let i = 0;
         function typeStoryChar() {
@@ -278,13 +280,133 @@
             storyMsg.innerText = msg.slice(0, i);
             i++;
             setTimeout(typeStoryChar, 45);
+          } else {
+            showStoryOptions();
           }
         }
         typeStoryChar();
-      }, 900); // Wait for blackout fade-in
+      }, 900);
     }
 
-    function showDeathMessage(typing = false) {
+    function showStoryOptions() {
+      let optionsDiv = document.getElementById('story-options');
+      if (!optionsDiv) {
+        optionsDiv = document.createElement('div');
+        optionsDiv.id = 'story-options';
+        optionsDiv.style.position = 'fixed';
+        optionsDiv.style.top = '65%';
+        optionsDiv.style.left = '50%';
+        optionsDiv.style.transform = 'translate(-50%, 0)';
+        optionsDiv.style.display = 'flex';
+        optionsDiv.style.flexDirection = 'column';
+        optionsDiv.style.gap = '18px';
+        optionsDiv.style.zIndex = '10001';
+        document.body.appendChild(optionsDiv);
+      }
+      optionsDiv.innerHTML = '';
+      function makeBtn(text, onClick) {
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        btn.style.background = 'none';
+        btn.style.border = 'none';
+        btn.style.color = '#ff2222';
+        btn.style.fontSize = '1.5em';
+        btn.style.fontFamily = 'monospace';
+        btn.style.cursor = 'pointer';
+        btn.style.padding = '8px 0';
+        btn.style.transition = 'color 0.2s';
+        btn.onmouseover = () => btn.style.color = '#fff';
+        btn.onmouseout = () => btn.style.color = '#ff2222';
+        btn.onclick = onClick;
+        btn.onmousedown = e => e.preventDefault();
+        return btn;
+      }
+      optionsDiv.appendChild(makeBtn('> where am i?', () => {
+        document.getElementById('story-message').style.display = 'none';
+        optionsDiv.style.display = 'none';
+        showStoryAnswer('You\u2019re inside what\u2019s left of the farm.');
+      }));
+      optionsDiv.appendChild(makeBtn('> who are you?', () => {
+        document.getElementById('story-message').style.display = 'none';
+        optionsDiv.style.display = 'none';
+        showStoryAnswer('.....');
+      }));
+    }
+
+    function showStoryAnswer(answer) {
+      let answerDiv = document.getElementById('story-answer');
+      if (!answerDiv) {
+        answerDiv = document.createElement('div');
+        answerDiv.id = 'story-answer';
+        answerDiv.style.position = 'fixed';
+        answerDiv.style.top = '50%';
+        answerDiv.style.left = '50%';
+        answerDiv.style.transform = 'translate(-50%, -50%)';
+        answerDiv.style.color = '#ff2222';
+        answerDiv.style.fontSize = '2.2em';
+        answerDiv.style.fontWeight = 'bold';
+        answerDiv.style.zIndex = '10002';
+        answerDiv.style.textShadow = '0 0 16px #f00, 0 0 32px #800';
+        answerDiv.style.textAlign = 'center';
+        document.body.appendChild(answerDiv);
+      }
+      answerDiv.innerText = '';
+      let i = 0;
+      function typeAnswerChar() {
+        if (i <= answer.length) {
+          answerDiv.innerText = answer.slice(0, i);
+          i++;
+          setTimeout(typeAnswerChar, 45);
+        } else {
+          showContinueButton();
+        }
+      }
+      typeAnswerChar();
+    }
+
+    function showContinueButton() {
+      let btn = document.getElementById('continue-btn');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'continue-btn';
+        btn.innerText = '> click to continue';
+        btn.style.background = 'none';
+        btn.style.border = 'none';
+        btn.style.color = '#ff2222';
+        btn.style.fontSize = '1.5em';
+        btn.style.fontFamily = 'monospace';
+        btn.style.cursor = 'pointer';
+        btn.style.marginTop = '32px';
+        btn.style.display = 'block';
+        btn.style.position = 'fixed';
+        btn.style.left = '50%';
+        btn.style.top = '65%';
+        btn.style.transform = 'translate(-50%, 0)';
+        btn.style.zIndex = '10003';
+        btn.onmouseover = () => btn.style.color = '#fff';
+        btn.onmouseout = () => btn.style.color = '#ff2222';
+        btn.onmousedown = e => e.preventDefault();
+        btn.onclick = () => {
+          // Remove answer and button, then continue story
+          let answerDiv = document.getElementById('story-answer');
+          if (answerDiv) answerDiv.remove();
+          btn.remove();
+          continueStory();
+        };
+        document.body.appendChild(btn);
+      }
+    }
+
+    function continueStory() {
+      // Placeholder for next part of the story
+      // You can define what happens here next
+    }
+
+    function hideDeathMessage() {
+      messageDiv.style.display = 'none';
+    }
+
+    function showDeathMessage(typing = false, callback) {
       let msg;
       if (deathCount >= 13) {
         msg = 'theres no turning back.';
@@ -318,35 +440,35 @@
             messageDiv.innerText = msg.slice(0, i);
             i++;
             setTimeout(typeChar, 35);
+          } else if (callback) {
+            callback();
           }
         }
         typeChar();
       } else {
         messageDiv.innerText = msg;
         messageDiv.style.display = 'block';
+        if (callback) callback();
       }
-    }
-
-    function hideDeathMessage() {
-      messageDiv.style.display = 'none';
     }
 
     function handleDeath() {
       isDead = true;
       deathCount++;
       chickenDiv.innerText = '🍗';
-      // Use typing animation for death message
-      showDeathMessage(true);
-      setTimeout(() => {
-        hideDeathMessage();
-        chickenDiv.innerText = '🐔';
-        resetChicken();
-        isDead = false;
-        // Blackout after death message is shown and screen is reset
-        if (deathCount >= 13) {
-          setTimeout(triggerBlackout, 2000); // longer delay for effect
-        }
-      }, 1800);
+      // Use typing animation for death message, and only hide after typing is done
+      showDeathMessage(true, () => {
+        setTimeout(() => {
+          hideDeathMessage();
+          chickenDiv.innerText = '🐔';
+          resetChicken();
+          isDead = false;
+          // Blackout after death message is shown and screen is reset
+          if (deathCount >= 13) {
+            setTimeout(triggerBlackout, 2000); // longer delay for effect
+          }
+        }, 400); // short pause after typing
+      });
     }
 
     function gameLoop() {
@@ -370,19 +492,27 @@
       requestAnimationFrame(gameLoop);
     }
 
+    let lastChickenY = chicken.y;
+    let minChickenY = chicken.y;
+    let upKeyCooldown = false;
     document.addEventListener('keydown', (e) => {
       if (!gameRunning) return;
       if (e.key === 'ArrowUp') {
-        if (chicken.y - laneHeight >= 0) {
+        if (!upKeyCooldown && chicken.y - laneHeight >= 0) {
           chicken.y -= laneHeight;
-          score++;
-          updateScore();
+          if (chicken.y < minChickenY) {
+            score++;
+            updateScore();
+            minChickenY = chicken.y;
+          }
+          lastChickenY = chicken.y;
+          upKeyCooldown = true;
+          setTimeout(() => { upKeyCooldown = false; }, 180); // 180ms cooldown
         }
       } else if (e.key === 'ArrowDown') {
         if (chicken.y + laneHeight < areaHeight) {
           chicken.y += laneHeight;
-          score++;
-          updateScore();
+          lastChickenY = chicken.y;
         }
       } else if (e.key === 'ArrowLeft') {
         if (chicken.x - 20 >= 0) chicken.x -= 20;
