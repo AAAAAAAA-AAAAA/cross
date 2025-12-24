@@ -92,6 +92,20 @@
       transition: top 0.1s, left 0.1s;
       z-index: 2;
     }
+    #controlsHint {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.1em;
+      color: #333;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 18px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0001;
+      z-index: 50;
+      font-family: Arial, sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -99,13 +113,15 @@
   <div id="score">Score: 0</div>
   <div id="gameArea"></div>
   <div id="message"></div>
+  <div id="controlsHint"></div>
   <script>
     const gameArea = document.getElementById('gameArea');
     const scoreDiv = document.getElementById('score');
     let areaWidth = 400;
     let areaHeight = 600;
-    const laneHeight = 50;
-    const totalLanes = 10; // More lanes for more roads
+    // Make the road bigger and add more lanes for mobile
+    const totalLanes = window.innerWidth < 900 ? 16 : 10; // 16 lanes for mobile, 10 for desktop
+    const laneHeight = window.innerWidth < 900 ? 44 : 50; // slightly smaller lane height for mobile
     const restEvery = 3; // Insert a rest area after every 3 roads
     let pattern = [];
     let cars = [];
@@ -187,8 +203,15 @@
     }
 
     function resetChicken() {
-      chicken.x = 180;
-      chicken.y = areaHeight - laneHeight;
+      // For mobile, start chicken closer to the first road (not at the very bottom)
+      if (window.innerWidth < 900) {
+        chicken.x = Math.floor(areaWidth / 2) - chicken.size / 2;
+        // Place chicken just above the bottom rest area, at the first road
+        chicken.y = areaHeight - laneHeight * 2;
+      } else {
+        chicken.x = 180;
+        chicken.y = areaHeight - laneHeight;
+      }
       minChickenY = chicken.y;
       updateChicken();
     }
@@ -541,56 +564,23 @@
       updateChicken();
     });
 
-    // Add Full Screen button for mobile
-    function createFullscreenButton() {
-      if (window.innerWidth < 900) {
-        let btn = document.getElementById('fullscreen-btn');
-        if (!btn) {
-          btn = document.createElement('button');
-          btn.id = 'fullscreen-btn';
-          btn.innerText = 'Full Screen';
-          btn.style.position = 'fixed';
-          btn.style.bottom = '18px';
-          btn.style.left = '50%';
-          btn.style.transform = 'translateX(-50%)';
-          btn.style.zIndex = '100';
-          btn.style.fontSize = '1.3em';
-          btn.style.background = '#d84315';
-          btn.style.color = '#fff';
-          btn.style.border = 'none';
-          btn.style.borderRadius = '12px';
-          btn.style.padding = '12px 32px';
-          btn.style.boxShadow = '0 2px 8px #0002';
-          btn.style.cursor = 'pointer';
-          btn.onclick = () => {
-            gameArea.style.width = '100vw';
-            gameArea.style.height = '100vh';
-            areaWidth = window.innerWidth;
-            areaHeight = window.innerHeight;
-            btn.style.display = 'none';
-          };
-          document.body.appendChild(btn);
-        }
-      } else {
-        let btn = document.getElementById('fullscreen-btn');
-        if (btn) btn.remove();
-      }
-    }
-    window.addEventListener('resize', createFullscreenButton);
-    createFullscreenButton();
-
-    // Responsive game area for mobile - smaller by default
+    // Responsive game area for mobile - larger by default, and green area smaller
     function adjustGameAreaSize() {
       if (window.innerWidth < 900) {
-        gameArea.style.width = '98vw';
-        gameArea.style.height = '60vh'; // smaller starter area
+        // Make game area larger for mobile
+        gameArea.style.width = '99vw';
+        gameArea.style.height = '80vh'; // taller for mobile
         areaWidth = gameArea.offsetWidth;
         areaHeight = gameArea.offsetHeight;
+        // Make road bigger: more lanes, less green
+        gameArea.style.background =
+          'linear-gradient(to bottom, #a5d6a7 0%, #a5d6a7 10%, #fffde7 10%, #fffde7 100%)';
       } else {
         gameArea.style.width = '400px';
         gameArea.style.height = '600px';
         areaWidth = 400;
         areaHeight = 600;
+        gameArea.style.background = '#a5d6a7';
       }
     }
     window.addEventListener('resize', adjustGameAreaSize);
@@ -686,6 +676,30 @@
     updateScore();
     updateChicken();
     gameLoop();
+
+    // Add controls hint at the bottom of the screen
+    function updateControlsHint() {
+      const hintDiv = document.getElementById('controlsHint');
+      hintDiv.style.position = 'fixed';
+      hintDiv.style.bottom = '10px';
+      hintDiv.style.left = '50%';
+      hintDiv.style.transform = 'translateX(-50%)';
+      hintDiv.style.fontSize = window.innerWidth < 900 ? '1.3em' : '1.1em';
+      hintDiv.style.color = '#333';
+      hintDiv.style.background = 'rgba(255,255,255,0.85)';
+      hintDiv.style.padding = '8px 18px';
+      hintDiv.style.borderRadius = '12px';
+      hintDiv.style.boxShadow = '0 2px 8px #0001';
+      hintDiv.style.zIndex = '50';
+      hintDiv.style.fontFamily = 'Arial, sans-serif';
+      if (window.innerWidth < 900) {
+        hintDiv.innerText = '- swipe to move on mobile';
+      } else {
+        hintDiv.innerText = '- use arrow keys to move on PC';
+      }
+    }
+    window.addEventListener('resize', updateControlsHint);
+    updateControlsHint();
   </script>
 </body>
 </html>
