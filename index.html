@@ -16,6 +16,8 @@
     h1 {
       margin-top: 20px;
       margin-bottom: 10px;
+      font-size: 3.5em;
+      letter-spacing: 0.04em;
     }
     #score {
       font-size: 1.2em;
@@ -50,8 +52,8 @@
     }
     .car {
       position: absolute;
-      top: 10px;
-      font-size: 2em;
+      top: 1px;
+      font-size: 2.6em;
       background: #fff;
       border: 2px solid #444;
       border-radius: 12px;
@@ -63,6 +65,8 @@
       font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Arial', sans-serif;
       z-index: 1;
       box-shadow: 0 2px 6px #8882;
+      /* Ensure fire stays in lane */
+      overflow: hidden;
     }
     #message {
       position: absolute;
@@ -152,7 +156,8 @@
           const car = cars.find(c => c.lane === i);
           if (car) {
             car.div.style.left = car.x + 'px';
-            car.div.style.top = (i * laneHeight + 10) + 'px';
+            car.div.style.top = (i * laneHeight + 1) + 'px'; // keep fire inside lane
+            car.div.style.height = (laneHeight - 2) + 'px'; // fit fire to lane
             gameArea.appendChild(car.div);
           }
         }
@@ -536,13 +541,51 @@
       updateChicken();
     });
 
-    // Responsive game area for mobile - make it fill the viewport
+    // Add Full Screen button for mobile
+    function createFullscreenButton() {
+      if (window.innerWidth < 900) {
+        let btn = document.getElementById('fullscreen-btn');
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.id = 'fullscreen-btn';
+          btn.innerText = 'Full Screen';
+          btn.style.position = 'fixed';
+          btn.style.bottom = '18px';
+          btn.style.left = '50%';
+          btn.style.transform = 'translateX(-50%)';
+          btn.style.zIndex = '100';
+          btn.style.fontSize = '1.3em';
+          btn.style.background = '#d84315';
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.borderRadius = '12px';
+          btn.style.padding = '12px 32px';
+          btn.style.boxShadow = '0 2px 8px #0002';
+          btn.style.cursor = 'pointer';
+          btn.onclick = () => {
+            gameArea.style.width = '100vw';
+            gameArea.style.height = '100vh';
+            areaWidth = window.innerWidth;
+            areaHeight = window.innerHeight;
+            btn.style.display = 'none';
+          };
+          document.body.appendChild(btn);
+        }
+      } else {
+        let btn = document.getElementById('fullscreen-btn');
+        if (btn) btn.remove();
+      }
+    }
+    window.addEventListener('resize', createFullscreenButton);
+    createFullscreenButton();
+
+    // Responsive game area for mobile - smaller by default
     function adjustGameAreaSize() {
       if (window.innerWidth < 900) {
-        gameArea.style.width = '100vw';
-        gameArea.style.height = '100vh';
-        areaWidth = window.innerWidth;
-        areaHeight = window.innerHeight;
+        gameArea.style.width = '98vw';
+        gameArea.style.height = '60vh'; // smaller starter area
+        areaWidth = gameArea.offsetWidth;
+        areaHeight = gameArea.offsetHeight;
       } else {
         gameArea.style.width = '400px';
         gameArea.style.height = '600px';
