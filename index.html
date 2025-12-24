@@ -91,15 +91,15 @@
   </style>
 </head>
 <body>
-  <h1>🐔 Chicken Cross the Road</h1>
+  <h1>survive...?</h1>
   <div id="score">Score: 0</div>
   <div id="gameArea"></div>
   <div id="message"></div>
   <script>
     const gameArea = document.getElementById('gameArea');
     const scoreDiv = document.getElementById('score');
-    const areaWidth = 400;
-    const areaHeight = 600;
+    let areaWidth = 400;
+    let areaHeight = 600;
     const laneHeight = 50;
     const totalLanes = 10; // More lanes for more roads
     const restEvery = 3; // Insert a rest area after every 3 roads
@@ -452,9 +452,24 @@
       }
     }
 
+    function updateTitleColor() {
+      const title = document.querySelector('h1');
+      // Interpolate from black (0,0,0) to red (216, 67, 21) as deathCount increases
+      let maxDeaths = 13;
+      let t = Math.min(deathCount, maxDeaths) / maxDeaths;
+      // Start at black, end at #d84315
+      let r = Math.round(0 + t * (216 - 0));
+      let g = Math.round(0 + t * (67 - 0));
+      let b = Math.round(0 + t * (21 - 0));
+      title.style.transition = 'color 0.7s';
+      title.style.color = `rgb(${r},${g},${b})`;
+    }
+
+    // Call after each death
     function handleDeath() {
       isDead = true;
       deathCount++;
+      updateTitleColor();
       chickenDiv.innerText = '🍗';
       // Use typing animation for death message, and only hide after typing is done
       showDeathMessage(true, () => {
@@ -522,6 +537,103 @@
       updateChicken();
     });
 
+    // Responsive game area for mobile
+    function adjustGameAreaSize() {
+      if (window.innerWidth < 600) {
+        gameArea.style.width = '98vw';
+        gameArea.style.height = '80vh';
+        areaWidth = gameArea.offsetWidth;
+        areaHeight = gameArea.offsetHeight;
+      } else {
+        gameArea.style.width = '400px';
+        gameArea.style.height = '600px';
+        areaWidth = 400;
+        areaHeight = 600;
+      }
+    }
+    // Call on load and resize
+    window.addEventListener('resize', adjustGameAreaSize);
+    adjustGameAreaSize();
+
+    // Swipe gesture support for mobile
+    let touchStartX = null, touchStartY = null;
+    gameArea.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    });
+    gameArea.addEventListener('touchend', function(e) {
+      if (touchStartX === null || touchStartY === null) return;
+      let dx = e.changedTouches[0].clientX - touchStartX;
+      let dy = e.changedTouches[0].clientY - touchStartY;
+      let absDx = Math.abs(dx), absDy = Math.abs(dy);
+      if (absDx > 20 || absDy > 20) {
+        if (absDx > absDy) {
+          if (dx > 0 && chicken.x + 20 <= areaWidth - chicken.size) chicken.x += 20; // right
+          else if (dx < 0 && chicken.x - 20 >= 0) chicken.x -= 20; // left
+        } else {
+          if (dy < 0 && chicken.y - laneHeight >= 0) {
+            chicken.y -= laneHeight; // up
+            if (chicken.y < minChickenY) {
+              score++;
+              updateScore();
+              minChickenY = chicken.y;
+            }
+            lastChickenY = chicken.y;
+          } else if (dy > 0 && chicken.y + laneHeight < areaHeight) {
+            chicken.y += laneHeight; // down
+            lastChickenY = chicken.y;
+          }
+        }
+        updateChicken();
+      }
+      touchStartX = null;
+      touchStartY = null;
+    });
+
+    // Make cutscene overlays and buttons mobile-friendly
+    function adjustCutsceneStyles() {
+      const storyMsg = document.getElementById('story-message');
+      const optionsDiv = document.getElementById('story-options');
+      const answerDiv = document.getElementById('story-answer');
+      const continueBtn = document.getElementById('continue-btn');
+      const isMobile = window.innerWidth < 600;
+      if (storyMsg) {
+        storyMsg.style.fontSize = isMobile ? '5vw' : '2.2em';
+        storyMsg.style.padding = isMobile ? '2vw' : '';
+      }
+      if (optionsDiv) {
+        optionsDiv.style.gap = isMobile ? '4vw' : '18px';
+      }
+      if (answerDiv) {
+        answerDiv.style.fontSize = isMobile ? '5vw' : '2.2em';
+        answerDiv.style.padding = isMobile ? '2vw' : '';
+      }
+      if (continueBtn) {
+        continueBtn.style.fontSize = isMobile ? '4vw' : '1.5em';
+        continueBtn.style.padding = isMobile ? '3vw 0' : '8px 0';
+      }
+    }
+    window.addEventListener('resize', adjustCutsceneStyles);
+    // Call after overlays/buttons are created
+    // Patch into cutscene creation
+    function patchedShowStoryOptions() {
+      showStoryOptions();
+      adjustCutsceneStyles();
+    }
+    function patchedShowStoryAnswer(answer) {
+      showStoryAnswer(answer);
+      adjustCutsceneStyles();
+    }
+    function patchedShowContinueButton() {
+      showContinueButton();
+      adjustCutsceneStyles();
+    }
+    // Replace calls in triggerBlackout and showStoryOptions
+    // In triggerBlackout, replace showStoryOptions() with patchedShowStoryOptions()
+    // In showStoryOptions, replace showStoryAnswer(...) with patchedShowStoryAnswer(...)
+    // In showStoryAnswer, replace showContinueButton() with patchedShowContinueButton()
     // Initial setup
     pattern = randomPattern();
     randomizeCars();
