@@ -116,13 +116,23 @@
         div.style.top = (i * laneHeight) + 'px';
         gameArea.appendChild(div);
       }
+      // Add cars after drawing pattern
+      for (let i = 0; i < totalLanes; i++) {
+        if (pattern[i] === 1) { // Only on road lanes
+          const car = cars.find(c => c.lane === i);
+          if (car) {
+            car.div.style.left = car.x + 'px';
+            car.div.style.top = (i * laneHeight + 10) + 'px';
+            gameArea.appendChild(car.div);
+          }
+        }
+      }
+      // Add chicken after cars so it's always on top
+      gameArea.appendChild(chickenDiv);
     }
 
     function spawnCars() {
       // Remove old cars
-      for (let car of cars) {
-        if (car.div.parentNode) car.div.parentNode.removeChild(car.div);
-      }
       cars = [];
       for (let i = 0; i < totalLanes; i++) {
         if (pattern[i] === 1) { // Only on road lanes
@@ -130,9 +140,6 @@
           car.className = 'car';
           car.innerText = Math.random() > 0.5 ? '🚗' : '🚙';
           let left = carDirections[i] === 1 ? -60 : areaWidth + 20;
-          car.style.left = left + 'px';
-          car.style.top = (i * laneHeight + 10) + 'px';
-          gameArea.appendChild(car);
           cars.push({
             div: car,
             lane: i,
@@ -199,18 +206,17 @@
       if (chicken.y < laneHeight) {
         pattern = randomPattern();
         randomizeCars();
-        drawPattern();
         spawnCars();
+        drawPattern(); // Only call drawPattern after spawnCars
         resetChicken();
       }
       requestAnimationFrame(gameLoop);
     }
 
-    // Add chicken
+    // Create chickenDiv once
     const chickenDiv = document.createElement('div');
     chickenDiv.id = 'chicken';
     chickenDiv.innerText = '🐔';
-    gameArea.appendChild(chickenDiv);
 
     document.addEventListener('keydown', (e) => {
       if (!gameRunning) return;
@@ -237,8 +243,8 @@
     // Initial setup
     pattern = randomPattern();
     randomizeCars();
-    drawPattern();
     spawnCars();
+    drawPattern();
     updateScore();
     updateChicken();
     gameLoop();
