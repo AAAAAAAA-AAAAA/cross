@@ -454,14 +454,13 @@
 
     function updateTitleColor() {
       const title = document.querySelector('h1');
-      // Interpolate from black (0,0,0) to red (216, 67, 21) as deathCount increases
+      // Interpolate from black (0,0,0) to pure red (255,0,0) as deathCount increases
       let maxDeaths = 13;
       let t = Math.min(deathCount, maxDeaths) / maxDeaths;
-      // Start at black, end at #d84315
-      let r = Math.round(0 + t * (216 - 0));
-      let g = Math.round(0 + t * (67 - 0));
-      let b = Math.round(0 + t * (21 - 0));
-      title.style.transition = 'color 0.7s';
+      let r = Math.round(0 + t * 255);
+      let g = Math.round(0);
+      let b = Math.round(0);
+      title.style.transition = 'color 0.3s';
       title.style.color = `rgb(${r},${g},${b})`;
     }
 
@@ -537,13 +536,13 @@
       updateChicken();
     });
 
-    // Responsive game area for mobile
+    // Responsive game area for mobile - make it fill the viewport
     function adjustGameAreaSize() {
-      if (window.innerWidth < 600) {
-        gameArea.style.width = '98vw';
-        gameArea.style.height = '80vh';
-        areaWidth = gameArea.offsetWidth;
-        areaHeight = gameArea.offsetHeight;
+      if (window.innerWidth < 900) {
+        gameArea.style.width = '100vw';
+        gameArea.style.height = '100vh';
+        areaWidth = window.innerWidth;
+        areaHeight = window.innerHeight;
       } else {
         gameArea.style.width = '400px';
         gameArea.style.height = '600px';
@@ -551,24 +550,26 @@
         areaHeight = 600;
       }
     }
-    // Call on load and resize
     window.addEventListener('resize', adjustGameAreaSize);
     adjustGameAreaSize();
 
-    // Swipe gesture support for mobile
-    let touchStartX = null, touchStartY = null;
+    // Prevent scrolling/sliding on touch in game area
+    gameArea.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
     gameArea.addEventListener('touchstart', function(e) {
       if (e.touches.length === 1) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
       }
-    });
+    }, { passive: false });
     gameArea.addEventListener('touchend', function(e) {
       if (touchStartX === null || touchStartY === null) return;
       let dx = e.changedTouches[0].clientX - touchStartX;
       let dy = e.changedTouches[0].clientY - touchStartY;
       let absDx = Math.abs(dx), absDy = Math.abs(dy);
-      if (absDx > 20 || absDy > 20) {
+      // Lower swipe threshold for easier movement
+      if (absDx > 10 || absDy > 10) {
         if (absDx > absDy) {
           if (dx > 0 && chicken.x + 20 <= areaWidth - chicken.size) chicken.x += 20; // right
           else if (dx < 0 && chicken.x - 20 >= 0) chicken.x -= 20; // left
@@ -590,7 +591,7 @@
       }
       touchStartX = null;
       touchStartY = null;
-    });
+    }, { passive: false });
 
     // Make cutscene overlays and buttons mobile-friendly
     function adjustCutsceneStyles() {
