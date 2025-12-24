@@ -52,6 +52,34 @@
       position: absolute;
       top: 10px;
       font-size: 2em;
+      background: #fff;
+      border: 2px solid #444;
+      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Arial', sans-serif;
+      z-index: 1;
+      box-shadow: 0 2px 6px #8882;
+    }
+    #message {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #333;
+      border-radius: 16px;
+      padding: 32px 40px;
+      font-size: 2em;
+      color: #d84315;
+      font-weight: bold;
+      z-index: 10;
+      display: none;
+      text-align: center;
+      box-shadow: 0 4px 24px #0002;
     }
     #chicken {
       position: absolute;
@@ -66,6 +94,7 @@
   <h1>🐔 Chicken Cross the Road</h1>
   <div id="score">Score: 0</div>
   <div id="gameArea"></div>
+  <div id="message"></div>
   <script>
     const gameArea = document.getElementById('gameArea');
     const scoreDiv = document.getElementById('score');
@@ -82,6 +111,7 @@
     let bestScore = 0;
     let chicken = { x: 180, y: areaHeight - laneHeight, size: 40 };
     let gameRunning = true;
+    let deathCount = 0;
 
     function randomPattern() {
       // Generate a pattern: 1 = road, 0 = rest
@@ -138,7 +168,7 @@
         if (pattern[i] === 1) { // Only on road lanes
           const car = document.createElement('div');
           car.className = 'car';
-          car.innerText = Math.random() > 0.5 ? '🚗' : '🚙';
+          car.innerText = '🔥';
           let left = carDirections[i] === 1 ? -60 : areaWidth + 20;
           cars.push({
             div: car,
@@ -193,14 +223,141 @@
       return false;
     }
 
+    const chickenDiv = document.createElement('div');
+    chickenDiv.id = 'chicken';
+    chickenDiv.innerText = '🐔';
+    let isDead = false;
+    const messageDiv = document.getElementById('message');
+    const deathMessages = [
+      'not tuff gng',
+      'you need to lock in',
+      'was that on purpose?',
+      'can you be nicer to the chicken'
+    ];
+
+    // Add a fullscreen black overlay for the blackout effect
+    let blackoutDiv = null;
+    function triggerBlackout() {
+      if (!blackoutDiv) {
+        blackoutDiv = document.createElement('div');
+        blackoutDiv.style.position = 'fixed';
+        blackoutDiv.style.top = '0';
+        blackoutDiv.style.left = '0';
+        blackoutDiv.style.width = '100vw';
+        blackoutDiv.style.height = '100vh';
+        blackoutDiv.style.background = '#000';
+        blackoutDiv.style.zIndex = '9999';
+        blackoutDiv.style.transition = 'opacity 0.7s';
+        blackoutDiv.style.opacity = '0';
+        document.body.appendChild(blackoutDiv);
+      }
+      blackoutDiv.style.opacity = '1';
+      // Add red writing after blackout
+      setTimeout(() => {
+        let storyMsg = document.getElementById('story-message');
+        if (!storyMsg) {
+          storyMsg = document.createElement('div');
+          storyMsg.id = 'story-message';
+          storyMsg.style.position = 'fixed';
+          storyMsg.style.top = '50%';
+          storyMsg.style.left = '50%';
+          storyMsg.style.transform = 'translate(-50%, -50%)';
+          storyMsg.style.color = '#ff2222';
+          storyMsg.style.fontSize = '2.2em';
+          storyMsg.style.fontWeight = 'bold';
+          storyMsg.style.zIndex = '10000';
+          storyMsg.style.textShadow = '0 0 16px #f00, 0 0 32px #800';
+          storyMsg.style.textAlign = 'center';
+          document.body.appendChild(storyMsg);
+        }
+        // Typing animation for story message
+        const msg = 'I warned you... You cant really go back now.';
+        let i = 0;
+        function typeStoryChar() {
+          if (i <= msg.length) {
+            storyMsg.innerText = msg.slice(0, i);
+            i++;
+            setTimeout(typeStoryChar, 45);
+          }
+        }
+        typeStoryChar();
+      }, 900); // Wait for blackout fade-in
+    }
+
+    function showDeathMessage(typing = false) {
+      let msg;
+      if (deathCount >= 13) {
+        msg = 'theres no turning back.';
+      } else if (deathCount >= 12) {
+        msg = 'im telling you to stop killing them recklessly.. now.';
+      } else if (deathCount >= 11) {
+        msg = 'Im telling you, there are consequences...';
+      } else if (deathCount >= 10) {
+        msg = 'ARE YOU EVEN LISTENING?';
+      } else if (deathCount >= 9) {
+        msg = 'you dont understand anything!!!';
+      } else if (deathCount >= 8) {
+        msg = 'you dont understand';
+      } else if (deathCount >= 7) {
+        msg = 'please.';
+      } else if (deathCount >= 6) {
+        msg = 'just stop.';
+      } else if (deathCount >= 5) {
+        msg = 'I thought so.';
+      } else if (deathCount >= 4) {
+        msg = 'you really enjoy killing them dont you?';
+      } else {
+        msg = deathMessages[Math.floor(Math.random() * deathMessages.length)];
+      }
+      if (typing) {
+        messageDiv.innerText = '';
+        messageDiv.style.display = 'block';
+        let i = 0;
+        function typeChar() {
+          if (i <= msg.length) {
+            messageDiv.innerText = msg.slice(0, i);
+            i++;
+            setTimeout(typeChar, 35);
+          }
+        }
+        typeChar();
+      } else {
+        messageDiv.innerText = msg;
+        messageDiv.style.display = 'block';
+      }
+    }
+
+    function hideDeathMessage() {
+      messageDiv.style.display = 'none';
+    }
+
+    function handleDeath() {
+      isDead = true;
+      deathCount++;
+      chickenDiv.innerText = '🍗';
+      // Use typing animation for death message
+      showDeathMessage(true);
+      setTimeout(() => {
+        hideDeathMessage();
+        chickenDiv.innerText = '🐔';
+        resetChicken();
+        isDead = false;
+        // Blackout after death message is shown and screen is reset
+        if (deathCount >= 13) {
+          setTimeout(triggerBlackout, 2000); // longer delay for effect
+        }
+      }, 1800);
+    }
+
     function gameLoop() {
       if (!gameRunning) return;
       moveCars();
-      if (checkCollision()) {
+      if (!isDead && checkCollision()) {
         if (score > bestScore) bestScore = score;
+        handleDeath();
         score = 0;
         updateScore();
-        resetChicken();
+        return requestAnimationFrame(gameLoop);
       }
       // Check if crossed all lanes (reached top rest area)
       if (chicken.y < laneHeight) {
@@ -212,11 +369,6 @@
       }
       requestAnimationFrame(gameLoop);
     }
-
-    // Create chickenDiv once
-    const chickenDiv = document.createElement('div');
-    chickenDiv.id = 'chicken';
-    chickenDiv.innerText = '🐔';
 
     document.addEventListener('keydown', (e) => {
       if (!gameRunning) return;
